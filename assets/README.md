@@ -16,16 +16,19 @@ assets/
 ## 🎨 Brand Assets
 
 ### Logos
+
 - **Source:** `C:\Users\fajea\Desktop\InterviU\Graphic_chart\Logo 1\` and `Logo 2\`
 - **Formats:** HD PNG, SVG, Transparent PNG
 - **Usage:** App icons, headers, branding elements
 
 ### Profile Pictures
+
 - **Source:** `C:\Users\fajea\Desktop\InterviU\Graphic_chart\Logo 1\Profile Pic\`
 - **Formats:** PNG with transparent backgrounds
 - **Usage:** Default user avatars, profile placeholders
 
 ### Social Media Banners
+
 - **Source:** `C:\Users\fajea\Desktop\InterviU\Graphic_chart\Media_banner\`
 - **Platforms:** Facebook, LinkedIn, X (Twitter)
 - **Usage:** Social sharing, profile exports
@@ -55,8 +58,13 @@ The InterviU brand uses a 5-color palette:
 ## 🚀 Usage
 
 ### Import Brand Styles
+
 ```javascript
-import InterviUBrandStyles, { InterviUColors, InterviUTypography, InterviUSpacing } from '../assets/styles/brandStyles';
+import InterviUBrandStyles, {
+  InterviUColors,
+  InterviUTypography,
+  InterviUSpacing,
+} from "../assets/styles/brandStyles";
 
 // Use in your components
 const styles = StyleSheet.create({
@@ -72,8 +80,9 @@ const styles = StyleSheet.create({
 ```
 
 ### Use Brand Colors
+
 ```javascript
-import { InterviUColors } from '../assets/styles/brandStyles';
+import { InterviUColors } from "../assets/styles/brandStyles";
 
 const buttonStyle = {
   backgroundColor: InterviUColors.purpleBlue,
@@ -82,8 +91,9 @@ const buttonStyle = {
 ```
 
 ### Apply Typography
+
 ```javascript
-import { InterviUTypography } from '../assets/styles/brandStyles';
+import { InterviUTypography } from "../assets/styles/brandStyles";
 
 const textStyle = {
   ...InterviUTypography.styles.h3,
@@ -119,4 +129,4 @@ This asset system is designed to support the following pull requests:
 
 ---
 
-*This asset system ensures consistent branding and professional appearance across the entire Quick Status Board application.*
+_This asset system ensures consistent branding and professional appearance across the entire Quick Status Board application._

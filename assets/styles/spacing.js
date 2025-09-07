@@ -4,17 +4,17 @@
 export const InterviUSpacing = {
   // Base spacing unit (8px)
   unit: 8,
-  
+
   // Spacing Scale
   spacing: {
     0: 0,
-    1: 4,   // 0.5 * unit
-    2: 8,   // 1 * unit
-    3: 12,  // 1.5 * unit
-    4: 16,  // 2 * unit
-    5: 20,  // 2.5 * unit
-    6: 24,  // 3 * unit
-    8: 32,  // 4 * unit
+    1: 4, // 0.5 * unit
+    2: 8, // 1 * unit
+    3: 12, // 1.5 * unit
+    4: 16, // 2 * unit
+    5: 20, // 2.5 * unit
+    6: 24, // 3 * unit
+    8: 32, // 4 * unit
     10: 40, // 5 * unit
     12: 48, // 6 * unit
     16: 64, // 8 * unit
@@ -22,34 +22,34 @@ export const InterviUSpacing = {
     24: 96, // 12 * unit
     32: 128, // 16 * unit
   },
-  
+
   // Common Layout Spacing
   layout: {
     // Container padding
     containerPadding: 16,
     screenPadding: 20,
-    
+
     // Component spacing
     componentMargin: 16,
     sectionMargin: 24,
-    
+
     // Card spacing
     cardPadding: 16,
     cardMargin: 12,
-    
+
     // Form spacing
     inputMargin: 12,
     labelMargin: 8,
-    
+
     // Button spacing
     buttonPadding: 16,
     buttonMargin: 8,
-    
+
     // List spacing
     listItemPadding: 16,
     listItemMargin: 8,
   },
-  
+
   // Border Radius
   borderRadius: {
     none: 0,
@@ -58,14 +58,14 @@ export const InterviUSpacing = {
     md: 12,
     lg: 16,
     xl: 20,
-    '2xl': 24,
+    "2xl": 24,
     full: 9999,
   },
-  
+
   // Shadows
   shadow: {
     sm: {
-      shadowColor: '#000',
+      shadowColor: "#000",
       shadowOffset: {
         width: 0,
         height: 1,
@@ -75,7 +75,7 @@ export const InterviUSpacing = {
       elevation: 1,
     },
     base: {
-      shadowColor: '#000',
+      shadowColor: "#000",
       shadowOffset: {
         width: 0,
         height: 2,
@@ -85,7 +85,7 @@ export const InterviUSpacing = {
       elevation: 2,
     },
     md: {
-      shadowColor: '#000',
+      shadowColor: "#000",
       shadowOffset: {
         width: 0,
         height: 4,
@@ -95,7 +95,7 @@ export const InterviUSpacing = {
       elevation: 4,
     },
     lg: {
-      shadowColor: '#000',
+      shadowColor: "#000",
       shadowOffset: {
         width: 0,
         height: 8,
@@ -105,7 +105,7 @@ export const InterviUSpacing = {
       elevation: 8,
     },
   },
-  
+
   // Icon Sizes
   iconSize: {
     xs: 12,
@@ -114,9 +114,9 @@ export const InterviUSpacing = {
     md: 24,
     lg: 32,
     xl: 40,
-    '2xl': 48,
+    "2xl": 48,
   },
-  
+
   // Avatar Sizes
   avatarSize: {
     xs: 24,
@@ -125,7 +125,7 @@ export const InterviUSpacing = {
     md: 48,
     lg: 64,
     xl: 80,
-    '2xl': 96,
+    "2xl": 96,
   },
 };
 
