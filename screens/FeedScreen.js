@@ -1,266 +1,204 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from "react";
 import {
   View,
   Text,
   TextInput,
   TouchableOpacity,
-  StyleSheet,
   FlatList,
+  StyleSheet,
   Alert,
-  KeyboardAvoidingView,
-  Platform,
-  RefreshControl
-} from 'react-native';
-import { signOutUser } from '../config/auth';
-import { addStatus, subscribeToStatuses, formatTimestamp } from '../config/firestore';
+} from "react-native";
+import {
+  collection,
+  addDoc,
+  onSnapshot,
+  orderBy,
+  query,
+  serverTimestamp,
+} from "firebase/firestore";
+import { signOut } from "firebase/auth";
+import { auth, db } from "../config/firebase";
 
-export default function FeedScreen({ user }) {
-  const [statusText, setStatusText] = useState('');
+export default function FeedScreen({ onSignOut }) {
   const [statuses, setStatuses] = useState([]);
+  const [newStatus, setNewStatus] = useState("");
   const [loading, setLoading] = useState(false);
-  const [refreshing, setRefreshing] = useState(false);
 
   useEffect(() => {
-    // Subscribe to real-time updates
-    const unsubscribe = subscribeToStatuses((newStatuses, error) => {
-      if (error) {
-        Alert.alert('Error', 'Failed to load statuses');
-        return;
-      }
-      setStatuses(newStatuses);
+    // Listen to real-time updates from Firestore
+    const q = query(collection(db, "statuses"), orderBy("timestamp", "desc"));
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const statusList = snapshot.docs.map((doc) => ({
+        id: doc.id,
+        ...doc.data(),
+      }));
+      setStatuses(statusList);
     });
 
     return () => unsubscribe();
   }, []);
 
   const handlePostStatus = async () => {
-    if (!statusText.trim()) {
-      Alert.alert('Error', 'Please enter a status message');
-      return;
-    }
-
-    if (statusText.length > 280) {
-      Alert.alert('Error', 'Status message must be 280 characters or less');
+    if (!newStatus.trim()) {
+      Alert.alert("Error", "Please enter a status");
       return;
     }
 
     setLoading(true);
-
     try {
-      const result = await addStatus(
-        statusText.trim(),
-        user.uid,
-        user.email
-      );
-
-      if (result.success) {
-        setStatusText('');
-      } else {
-        Alert.alert('Error', result.error);
-      }
+      await addDoc(collection(db, "statuses"), {
+        text: newStatus.trim(),
+        user: auth.currentUser?.email || "Anonymous",
+        timestamp: serverTimestamp(),
+      });
+      setNewStatus("");
     } catch (error) {
-      Alert.alert('Error', 'Failed to post status');
+      Alert.alert("Error", error.message);
     } finally {
       setLoading(false);
     }
   };
 
-  const handleLogout = async () => {
+  const handleSignOut = async () => {
     try {
-      await signOutUser();
+      await signOut(auth);
+      onSignOut();
     } catch (error) {
-      Alert.alert('Error', 'Failed to logout');
+      Alert.alert("Error", error.message);
     }
   };
 
-  const onRefresh = () => {
-    setRefreshing(true);
-    // The real-time listener will automatically update the data
-    setTimeout(() => setRefreshing(false), 1000);
-  };
-
-  const renderStatusItem = ({ item }) => (
-    <View style={styles.statusCard}>
-      <View style={styles.statusHeader}>
-        <Text style={styles.authorEmail}>{item.authorEmail}</Text>
-        <Text style={styles.timestamp}>
-          {formatTimestamp(item.createdAt)}
-        </Text>
-      </View>
-      <Text style={styles.statusContent}>{item.content}</Text>
+  const renderStatus = ({ item }) => (
+    <View style={styles.statusItem}>
+      <Text style={styles.statusText}>{item.text}</Text>
+      <Text style={styles.statusUser}>by {item.user}</Text>
+      <Text style={styles.statusTime}>
+        {item.timestamp?.toDate?.()?.toLocaleString() || "Just now"}
+      </Text>
     </View>
   );
 
   return (
-    <KeyboardAvoidingView 
-      style={styles.container} 
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-    >
+    <View style={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>Quick Status Board</Text>
-        <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
-          <Text style={styles.logoutText}>Logout</Text>
+        <Text style={styles.title}>Status Feed</Text>
+        <TouchableOpacity style={styles.signOutButton} onPress={handleSignOut}>
+          <Text style={styles.signOutText}>Sign Out</Text>
         </TouchableOpacity>
       </View>
 
-      <View style={styles.inputContainer}>
+      <View style={styles.inputSection}>
         <TextInput
-          style={styles.statusInput}
+          style={styles.textInput}
           placeholder="What's on your mind?"
-          value={statusText}
-          onChangeText={setStatusText}
+          value={newStatus}
+          onChangeText={setNewStatus}
           multiline
-          maxLength={280}
         />
-        <View style={styles.inputFooter}>
-          <Text style={styles.characterCount}>
-            {statusText.length}/280
+        <TouchableOpacity
+          style={[styles.postButton, loading && styles.buttonDisabled]}
+          onPress={handlePostStatus}
+          disabled={loading}
+        >
+          <Text style={styles.postButtonText}>
+            {loading ? "Posting..." : "Post Status"}
           </Text>
-          <TouchableOpacity
-            style={[
-              styles.postButton,
-              (!statusText.trim() || loading) && styles.postButtonDisabled
-            ]}
-            onPress={handlePostStatus}
-            disabled={!statusText.trim() || loading}
-          >
-            <Text style={styles.postButtonText}>
-              {loading ? 'Posting...' : 'Post'}
-            </Text>
-          </TouchableOpacity>
-        </View>
+        </TouchableOpacity>
       </View>
 
       <FlatList
         data={statuses}
-        renderItem={renderStatusItem}
+        renderItem={renderStatus}
         keyExtractor={(item) => item.id}
-        style={styles.feedList}
-        refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
-        }
-        ListEmptyComponent={
-          <View style={styles.emptyContainer}>
-            <Text style={styles.emptyText}>No statuses yet. Be the first to post!</Text>
-          </View>
-        }
+        style={styles.statusList}
+        showsVerticalScrollIndicator={false}
       />
-    </KeyboardAvoidingView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: "#fff",
   },
   header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
     padding: 20,
-    backgroundColor: 'white',
     borderBottomWidth: 1,
-    borderBottomColor: '#e0e0e0',
+    borderBottomColor: "#eee",
   },
-  headerTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: '#333',
+  title: {
+    fontSize: 24,
+    fontWeight: "bold",
+    color: "#333",
   },
-  logoutButton: {
-    padding: 8,
+  signOutButton: {
+    backgroundColor: "#FF3B30",
+    paddingHorizontal: 15,
+    paddingVertical: 8,
+    borderRadius: 6,
   },
-  logoutText: {
-    color: '#007AFF',
-    fontSize: 16,
+  signOutText: {
+    color: "#fff",
+    fontSize: 14,
+    fontWeight: "bold",
   },
-  inputContainer: {
-    backgroundColor: 'white',
-    padding: 15,
+  inputSection: {
+    padding: 20,
     borderBottomWidth: 1,
-    borderBottomColor: '#e0e0e0',
+    borderBottomColor: "#eee",
   },
-  statusInput: {
+  textInput: {
     borderWidth: 1,
-    borderColor: '#ddd',
+    borderColor: "#ddd",
     borderRadius: 8,
     padding: 15,
     fontSize: 16,
+    marginBottom: 15,
     minHeight: 80,
-    textAlignVertical: 'top',
-    backgroundColor: '#f9f9f9',
-  },
-  inputFooter: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginTop: 10,
-  },
-  characterCount: {
-    color: '#666',
-    fontSize: 12,
+    textAlignVertical: "top",
   },
   postButton: {
-    backgroundColor: '#007AFF',
+    backgroundColor: "#34C759",
+    paddingVertical: 15,
     borderRadius: 8,
+    alignSelf: "flex-end",
     paddingHorizontal: 20,
-    paddingVertical: 10,
   },
-  postButtonDisabled: {
-    backgroundColor: '#ccc',
+  buttonDisabled: {
+    backgroundColor: "#ccc",
   },
   postButtonText: {
-    color: 'white',
-    fontSize: 14,
-    fontWeight: 'bold',
+    color: "#fff",
+    fontSize: 16,
+    fontWeight: "bold",
   },
-  feedList: {
+  statusList: {
     flex: 1,
+    padding: 20,
   },
-  statusCard: {
-    backgroundColor: 'white',
-    margin: 10,
+  statusItem: {
+    backgroundColor: "#f8f9fa",
     padding: 15,
     borderRadius: 8,
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 1,
-    },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
-    elevation: 2,
+    marginBottom: 15,
   },
-  statusHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+  statusText: {
+    fontSize: 16,
+    color: "#333",
     marginBottom: 8,
   },
-  authorEmail: {
+  statusUser: {
     fontSize: 14,
-    fontWeight: 'bold',
-    color: '#007AFF',
+    color: "#666",
+    fontWeight: "bold",
   },
-  timestamp: {
+  statusTime: {
     fontSize: 12,
-    color: '#666',
-  },
-  statusContent: {
-    fontSize: 16,
-    color: '#333',
-    lineHeight: 22,
-  },
-  emptyContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 40,
-  },
-  emptyText: {
-    fontSize: 16,
-    color: '#666',
-    textAlign: 'center',
+    color: "#999",
+    marginTop: 4,
   },
 });

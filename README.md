@@ -36,12 +36,14 @@ Before running this application, you need to set up:
 ## Installation
 
 1. Clone this repository:
+
    ```bash
    git clone <your-repo-url>
    cd QuickStatusBoard
    ```
 
 2. Install dependencies:
+
    ```bash
    npm install
    ```
@@ -56,7 +58,7 @@ Before running this application, you need to set up:
      projectId: "your-actual-project-id",
      storageBucket: "your-project-id.appspot.com",
      messagingSenderId: "your-actual-sender-id",
-     appId: "your-actual-app-id"
+     appId: "your-actual-app-id",
    };
    ```
 
@@ -65,6 +67,7 @@ Before running this application, you need to set up:
 ### Development
 
 1. Start the Expo development server:
+
    ```bash
    npm start
    ```
@@ -77,7 +80,8 @@ Before running this application, you need to set up:
 
 ### Testing on Emulator
 
-1. **Android**: 
+1. **Android**:
+
    - Install Android Studio
    - Set up an Android Virtual Device (AVD)
    - Run: `npm run android`
@@ -107,12 +111,14 @@ QuickStatusBoard/
 ### Firestore Collections
 
 #### `users` Collection
+
 - **Document ID**: Firebase Auth User ID (`uid`)
 - **Fields**:
   - `email`: User's email address
   - `createdAt`: Account creation timestamp
 
 #### `statuses` Collection
+
 - **Document ID**: Auto-generated
 - **Fields**:
   - `content`: Status message text
@@ -132,11 +138,11 @@ service cloud.firestore {
     match /users/{userId} {
       allow read, write: if request.auth != null && request.auth.uid == userId;
     }
-    
+
     // Authenticated users can read all statuses and create new ones
     match /statuses/{statusId} {
       allow read: if request.auth != null;
-      allow create: if request.auth != null && 
+      allow create: if request.auth != null &&
         request.auth.uid == resource.data.authorId;
     }
   }
@@ -152,7 +158,7 @@ This project fulfills all required assignment criteria:
 ✅ **Git Repository**: This repository with documentation  
 ✅ **Partner Collaboration**: Shared codebase for collaborative development  
 ✅ **Web Service Backend**: Firebase Firestore for data storage  
-✅ **Exceptional Features**: Ready for weather API, location, and push notifications  
+✅ **Exceptional Features**: Ready for weather API, location, and push notifications
 
 ## Future Enhancements (Exceptional Features)
 

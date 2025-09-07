@@ -1,16 +1,16 @@
-import React, { useState, useEffect } from 'react';
-import { StatusBar } from 'expo-status-bar';
-import { View, ActivityIndicator, StyleSheet } from 'react-native';
-import { onAuthStateChange } from './config/auth';
-import AuthScreen from './screens/AuthScreen';
-import FeedScreen from './screens/FeedScreen';
+import React, { useState, useEffect } from "react";
+import { View, StyleSheet } from "react-native";
+import { onAuthStateChanged } from "firebase/auth";
+import { auth } from "./config/firebase";
+import AuthScreen from "./screens/AuthScreen";
+import EnhancedFeedScreen from "./screens/EnhancedFeedScreen";
 
 export default function App() {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChange((user) => {
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
       setUser(user);
       setLoading(false);
     });
@@ -19,29 +19,19 @@ export default function App() {
   }, []);
 
   if (loading) {
-    return (
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#007AFF" />
-      </View>
-    );
+    return <View style={styles.container} />;
   }
 
-  return (
-    <View style={styles.container}>
-      {user ? <FeedScreen user={user} /> : <AuthScreen />}
-      <StatusBar style="auto" />
-    </View>
-  );
+  if (user) {
+    return <EnhancedFeedScreen onSignOut={() => setUser(null)} />;
+  }
+
+  return <AuthScreen onAuthSuccess={() => setUser(auth.currentUser)} />;
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-  },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: '#f5f5f5',
+    backgroundColor: "#fff",
   },
 });

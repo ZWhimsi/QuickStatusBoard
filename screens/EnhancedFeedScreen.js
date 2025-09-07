@@ -1,360 +1,348 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from "react";
 import {
   View,
   Text,
   TextInput,
   TouchableOpacity,
-  StyleSheet,
   FlatList,
+  StyleSheet,
   Alert,
-  KeyboardAvoidingView,
-  Platform,
-  RefreshControl,
-  Switch
-} from 'react-native';
-import { signOutUser } from '../config/auth';
-import { addStatus, subscribeToStatuses, formatTimestamp } from '../config/firestore';
-import { getLocationWithAddress } from '../config/location';
-import { getCurrentWeather, formatWeatherForStatus } from '../config/weather';
-import { sendLocalNotification, requestNotificationPermissions } from '../config/notifications';
+  ScrollView,
+} from "react-native";
+import {
+  collection,
+  addDoc,
+  onSnapshot,
+  orderBy,
+  query,
+  serverTimestamp,
+} from "firebase/firestore";
+import { signOut } from "firebase/auth";
+import { auth, db } from "../config/firebase";
+import { getCurrentLocation } from "../config/location";
+import { getWeatherData } from "../config/weather";
+import { scheduleLocalNotification } from "../config/notifications";
 
-export default function EnhancedFeedScreen({ user }) {
-  const [statusText, setStatusText] = useState('');
+export default function EnhancedFeedScreen({ onSignOut }) {
   const [statuses, setStatuses] = useState([]);
+  const [newStatus, setNewStatus] = useState("");
   const [loading, setLoading] = useState(false);
-  const [refreshing, setRefreshing] = useState(false);
-  const [includeLocation, setIncludeLocation] = useState(false);
-  const [includeWeather, setIncludeWeather] = useState(false);
-  const [notificationsEnabled, setNotificationsEnabled] = useState(false);
+  const [location, setLocation] = useState(null);
+  const [weather, setWeather] = useState(null);
+  const [locationLoading, setLocationLoading] = useState(false);
 
   useEffect(() => {
-    // Subscribe to real-time updates
-    const unsubscribe = subscribeToStatuses((newStatuses, error) => {
-      if (error) {
-        Alert.alert('Error', 'Failed to load statuses');
-        return;
-      }
-      setStatuses(newStatuses);
+    // Listen to real-time updates from Firestore
+    const q = query(collection(db, "statuses"), orderBy("timestamp", "desc"));
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const statusList = snapshot.docs.map((doc) => ({
+        id: doc.id,
+        ...doc.data(),
+      }));
+      setStatuses(statusList);
     });
 
     return () => unsubscribe();
   }, []);
 
-  useEffect(() => {
-    // Request notification permissions on component mount
-    requestNotificationPermissions().then(result => {
-      if (result.success) {
-        setNotificationsEnabled(true);
-      }
-    });
-  }, []);
+  const getLocationAndWeather = async () => {
+    setLocationLoading(true);
+    try {
+      const currentLocation = await getCurrentLocation();
+      setLocation(currentLocation);
+
+      const weatherData = await getWeatherData(
+        currentLocation.latitude,
+        currentLocation.longitude
+      );
+      setWeather(weatherData);
+    } catch (error) {
+      Alert.alert("Location Error", error.message);
+    } finally {
+      setLocationLoading(false);
+    }
+  };
 
   const handlePostStatus = async () => {
-    if (!statusText.trim()) {
-      Alert.alert('Error', 'Please enter a status message');
-      return;
-    }
-
-    if (statusText.length > 280) {
-      Alert.alert('Error', 'Status message must be 280 characters or less');
+    if (!newStatus.trim()) {
+      Alert.alert("Error", "Please enter a status");
       return;
     }
 
     setLoading(true);
-
     try {
-      let enhancedContent = statusText.trim();
-      let locationInfo = '';
-      let weatherInfo = '';
+      const statusData = {
+        text: newStatus.trim(),
+        user: auth.currentUser?.email || "Anonymous",
+        timestamp: serverTimestamp(),
+      };
 
-      // Get location if enabled
-      if (includeLocation) {
-        const locationResult = await getLocationWithAddress();
-        if (locationResult.success) {
-          locationInfo = ` 📍 ${locationResult.address.formatted}`;
-        }
+      // Add location if available
+      if (location) {
+        statusData.location = location.address;
+        statusData.coordinates = {
+          latitude: location.latitude,
+          longitude: location.longitude,
+        };
       }
 
-      // Get weather if enabled
-      if (includeWeather) {
-        const locationResult = await getLocationWithAddress();
-        if (locationResult.success) {
-          const weatherResult = await getCurrentWeather(
-            locationResult.location.latitude,
-            locationResult.location.longitude
-          );
-          if (weatherResult.success) {
-            weatherInfo = ` ${formatWeatherForStatus(weatherResult.weather)}`;
-          }
-        }
+      // Add weather if available
+      if (weather) {
+        statusData.weather = weather;
       }
 
-      // Combine all content
-      enhancedContent += locationInfo + weatherInfo;
+      await addDoc(collection(db, "statuses"), statusData);
+      setNewStatus("");
 
-      const result = await addStatus(
-        enhancedContent,
-        user.uid,
-        user.email
+      // Send local notification
+      await scheduleLocalNotification(
+        "Status Posted!",
+        "Your status has been shared successfully"
       );
-
-      if (result.success) {
-        setStatusText('');
-        
-        // Send local notification if enabled
-        if (notificationsEnabled) {
-          await sendLocalNotification(
-            'Status Posted!',
-            'Your status has been shared successfully',
-            { type: 'status_posted' }
-          );
-        }
-      } else {
-        Alert.alert('Error', result.error);
-      }
     } catch (error) {
-      Alert.alert('Error', 'Failed to post status');
+      Alert.alert("Error", error.message);
     } finally {
       setLoading(false);
     }
   };
 
-  const handleLogout = async () => {
+  const handleSignOut = async () => {
     try {
-      await signOutUser();
+      await signOut(auth);
+      onSignOut();
     } catch (error) {
-      Alert.alert('Error', 'Failed to logout');
+      Alert.alert("Error", error.message);
     }
   };
 
-  const onRefresh = () => {
-    setRefreshing(true);
-    // The real-time listener will automatically update the data
-    setTimeout(() => setRefreshing(false), 1000);
-  };
+  const renderStatus = ({ item }) => (
+    <View style={styles.statusItem}>
+      <Text style={styles.statusText}>{item.text}</Text>
+      <Text style={styles.statusUser}>by {item.user}</Text>
 
-  const renderStatusItem = ({ item }) => (
-    <View style={styles.statusCard}>
-      <View style={styles.statusHeader}>
-        <Text style={styles.authorEmail}>{item.authorEmail}</Text>
-        <Text style={styles.timestamp}>
-          {formatTimestamp(item.createdAt)}
-        </Text>
-      </View>
-      <Text style={styles.statusContent}>{item.content}</Text>
+      {item.location && (
+        <Text style={styles.statusLocation}>📍 {item.location}</Text>
+      )}
+
+      {item.weather && (
+        <View style={styles.weatherInfo}>
+          <Text style={styles.weatherText}>
+            {item.weather.icon} {item.weather.temperature} -{" "}
+            {item.weather.description}
+          </Text>
+        </View>
+      )}
+
+      <Text style={styles.statusTime}>
+        {item.timestamp?.toDate?.()?.toLocaleString() || "Just now"}
+      </Text>
     </View>
   );
 
   return (
-    <KeyboardAvoidingView 
-      style={styles.container} 
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-    >
+    <View style={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>Quick Status Board</Text>
-        <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
-          <Text style={styles.logoutText}>Logout</Text>
+        <Text style={styles.title}>Quick Status Board</Text>
+        <TouchableOpacity style={styles.signOutButton} onPress={handleSignOut}>
+          <Text style={styles.signOutText}>Sign Out</Text>
         </TouchableOpacity>
       </View>
 
-      <View style={styles.inputContainer}>
-        <TextInput
-          style={styles.statusInput}
-          placeholder="What's on your mind?"
-          value={statusText}
-          onChangeText={setStatusText}
-          multiline
-          maxLength={280}
-        />
-        
-        {/* Enhanced Features Toggle */}
-        <View style={styles.featuresContainer}>
-          <View style={styles.featureToggle}>
-            <Text style={styles.featureLabel}>📍 Include Location</Text>
-            <Switch
-              value={includeLocation}
-              onValueChange={setIncludeLocation}
-              trackColor={{ false: '#767577', true: '#81b0ff' }}
-              thumbColor={includeLocation ? '#007AFF' : '#f4f3f4'}
-            />
-          </View>
-          
-          <View style={styles.featureToggle}>
-            <Text style={styles.featureLabel}>🌤️ Include Weather</Text>
-            <Switch
-              value={includeWeather}
-              onValueChange={setIncludeWeather}
-              trackColor={{ false: '#767577', true: '#81b0ff' }}
-              thumbColor={includeWeather ? '#007AFF' : '#f4f3f4'}
-            />
-          </View>
-        </View>
-
-        <View style={styles.inputFooter}>
-          <Text style={styles.characterCount}>
-            {statusText.length}/280
+      {/* Location and Weather Section */}
+      <View style={styles.infoSection}>
+        <TouchableOpacity
+          style={styles.locationButton}
+          onPress={getLocationAndWeather}
+          disabled={locationLoading}
+        >
+          <Text style={styles.locationButtonText}>
+            {locationLoading
+              ? "Getting Location..."
+              : "📍 Get Location & Weather"}
           </Text>
-          <TouchableOpacity
-            style={[
-              styles.postButton,
-              (!statusText.trim() || loading) && styles.postButtonDisabled
-            ]}
-            onPress={handlePostStatus}
-            disabled={!statusText.trim() || loading}
-          >
-            <Text style={styles.postButtonText}>
-              {loading ? 'Posting...' : 'Post'}
+        </TouchableOpacity>
+
+        {location && (
+          <View style={styles.locationInfo}>
+            <Text style={styles.locationText}>📍 {location.address}</Text>
+          </View>
+        )}
+
+        {weather && (
+          <View style={styles.weatherInfo}>
+            <Text style={styles.weatherText}>
+              {weather.icon} {weather.temperature} - {weather.description}
             </Text>
-          </TouchableOpacity>
-        </View>
+            <Text style={styles.weatherDetails}>
+              Humidity: {weather.humidity} | Wind: {weather.windSpeed}
+            </Text>
+          </View>
+        )}
       </View>
 
+      {/* Status Input Section */}
+      <View style={styles.inputSection}>
+        <TextInput
+          style={styles.textInput}
+          placeholder="What's on your mind?"
+          value={newStatus}
+          onChangeText={setNewStatus}
+          multiline
+        />
+        <TouchableOpacity
+          style={[styles.postButton, loading && styles.buttonDisabled]}
+          onPress={handlePostStatus}
+          disabled={loading}
+        >
+          <Text style={styles.postButtonText}>
+            {loading ? "Posting..." : "Post Status"}
+          </Text>
+        </TouchableOpacity>
+      </View>
+
+      {/* Status Feed */}
       <FlatList
         data={statuses}
-        renderItem={renderStatusItem}
+        renderItem={renderStatus}
         keyExtractor={(item) => item.id}
-        style={styles.feedList}
-        refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
-        }
-        ListEmptyComponent={
-          <View style={styles.emptyContainer}>
-            <Text style={styles.emptyText}>No statuses yet. Be the first to post!</Text>
-          </View>
-        }
+        style={styles.statusList}
+        showsVerticalScrollIndicator={false}
       />
-    </KeyboardAvoidingView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: "#fff",
   },
   header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
     padding: 20,
-    backgroundColor: 'white',
     borderBottomWidth: 1,
-    borderBottomColor: '#e0e0e0',
+    borderBottomColor: "#eee",
   },
-  headerTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: '#333',
+  title: {
+    fontSize: 24,
+    fontWeight: "bold",
+    color: "#333",
   },
-  logoutButton: {
-    padding: 8,
+  signOutButton: {
+    backgroundColor: "#FF3B30",
+    paddingHorizontal: 15,
+    paddingVertical: 8,
+    borderRadius: 6,
   },
-  logoutText: {
-    color: '#007AFF',
-    fontSize: 16,
+  signOutText: {
+    color: "#fff",
+    fontSize: 14,
+    fontWeight: "bold",
   },
-  inputContainer: {
-    backgroundColor: 'white',
-    padding: 15,
+  infoSection: {
+    padding: 20,
     borderBottomWidth: 1,
-    borderBottomColor: '#e0e0e0',
+    borderBottomColor: "#eee",
+    backgroundColor: "#f8f9fa",
   },
-  statusInput: {
-    borderWidth: 1,
-    borderColor: '#ddd',
+  locationButton: {
+    backgroundColor: "#007AFF",
+    paddingVertical: 12,
+    paddingHorizontal: 20,
     borderRadius: 8,
-    padding: 15,
-    fontSize: 16,
-    minHeight: 80,
-    textAlignVertical: 'top',
-    backgroundColor: '#f9f9f9',
-  },
-  featuresContainer: {
-    marginTop: 15,
-    paddingTop: 15,
-    borderTopWidth: 1,
-    borderTopColor: '#e0e0e0',
-  },
-  featureToggle: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
     marginBottom: 10,
   },
-  featureLabel: {
+  locationButtonText: {
+    color: "#fff",
+    fontSize: 16,
+    fontWeight: "bold",
+    textAlign: "center",
+  },
+  locationInfo: {
+    marginBottom: 10,
+  },
+  locationText: {
     fontSize: 14,
-    color: '#333',
+    color: "#666",
+    fontWeight: "bold",
   },
-  inputFooter: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginTop: 10,
+  weatherInfo: {
+    backgroundColor: "#e3f2fd",
+    padding: 10,
+    borderRadius: 8,
+    marginBottom: 5,
   },
-  characterCount: {
-    color: '#666',
+  weatherText: {
+    fontSize: 16,
+    color: "#1976d2",
+    fontWeight: "bold",
+  },
+  weatherDetails: {
     fontSize: 12,
+    color: "#666",
+    marginTop: 2,
+  },
+  inputSection: {
+    padding: 20,
+    borderBottomWidth: 1,
+    borderBottomColor: "#eee",
+  },
+  textInput: {
+    borderWidth: 1,
+    borderColor: "#ddd",
+    borderRadius: 8,
+    padding: 15,
+    fontSize: 16,
+    marginBottom: 15,
+    minHeight: 80,
+    textAlignVertical: "top",
   },
   postButton: {
-    backgroundColor: '#007AFF',
+    backgroundColor: "#34C759",
+    paddingVertical: 15,
     borderRadius: 8,
+    alignSelf: "flex-end",
     paddingHorizontal: 20,
-    paddingVertical: 10,
   },
-  postButtonDisabled: {
-    backgroundColor: '#ccc',
+  buttonDisabled: {
+    backgroundColor: "#ccc",
   },
   postButtonText: {
-    color: 'white',
-    fontSize: 14,
-    fontWeight: 'bold',
+    color: "#fff",
+    fontSize: 16,
+    fontWeight: "bold",
   },
-  feedList: {
+  statusList: {
     flex: 1,
+    padding: 20,
   },
-  statusCard: {
-    backgroundColor: 'white',
-    margin: 10,
+  statusItem: {
+    backgroundColor: "#f8f9fa",
     padding: 15,
     borderRadius: 8,
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 1,
-    },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
-    elevation: 2,
+    marginBottom: 15,
   },
-  statusHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+  statusText: {
+    fontSize: 16,
+    color: "#333",
     marginBottom: 8,
   },
-  authorEmail: {
+  statusUser: {
     fontSize: 14,
-    fontWeight: 'bold',
-    color: '#007AFF',
+    color: "#666",
+    fontWeight: "bold",
   },
-  timestamp: {
+  statusLocation: {
     fontSize: 12,
-    color: '#666',
+    color: "#007AFF",
+    marginTop: 4,
+    fontStyle: "italic",
   },
-  statusContent: {
-    fontSize: 16,
-    color: '#333',
-    lineHeight: 22,
-  },
-  emptyContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 40,
-  },
-  emptyText: {
-    fontSize: 16,
-    color: '#666',
-    textAlign: 'center',
+  statusTime: {
+    fontSize: 12,
+    color: "#999",
+    marginTop: 4,
   },
 });

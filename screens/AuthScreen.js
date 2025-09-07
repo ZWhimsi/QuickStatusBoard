@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState } from "react";
 import {
   View,
   Text,
@@ -6,170 +6,138 @@ import {
   TouchableOpacity,
   StyleSheet,
   Alert,
-  KeyboardAvoidingView,
-  Platform,
-  ScrollView
-} from 'react-native';
-import { createUser, signInUser } from '../config/auth';
+} from "react-native";
+import {
+  createUserWithEmailAndPassword,
+  signInWithEmailAndPassword,
+} from "firebase/auth";
+import { auth } from "../config/firebase";
 
-export default function AuthScreen() {
-  const [isLogin, setIsLogin] = useState(true);
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+export default function AuthScreen({ onAuthSuccess }) {
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [isSignUp, setIsSignUp] = useState(false);
   const [loading, setLoading] = useState(false);
 
   const handleAuth = async () => {
     if (!email || !password) {
-      Alert.alert('Error', 'Please fill in all fields');
-      return;
-    }
-
-    if (password.length < 6) {
-      Alert.alert('Error', 'Password must be at least 6 characters');
+      Alert.alert("Error", "Please fill in all fields");
       return;
     }
 
     setLoading(true);
-
     try {
-      let result;
-      if (isLogin) {
-        result = await signInUser(email, password);
+      if (isSignUp) {
+        await createUserWithEmailAndPassword(auth, email, password);
+        Alert.alert("Success", "Account created successfully!");
       } else {
-        result = await createUser(email, password);
+        await signInWithEmailAndPassword(auth, email, password);
       }
-
-      if (!result.success) {
-        Alert.alert('Error', result.error);
-      }
-      // Success is handled by the auth state listener in App.js
+      onAuthSuccess();
     } catch (error) {
-      Alert.alert('Error', 'An unexpected error occurred');
+      Alert.alert("Error", error.message);
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <KeyboardAvoidingView 
-      style={styles.container} 
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-    >
-      <ScrollView contentContainerStyle={styles.scrollContainer}>
-        <View style={styles.formContainer}>
-          <Text style={styles.title}>Quick Status Board</Text>
-          
-          <View style={styles.inputContainer}>
-            <TextInput
-              style={styles.input}
-              placeholder="Email"
-              value={email}
-              onChangeText={setEmail}
-              keyboardType="email-address"
-              autoCapitalize="none"
-              autoCorrect={false}
-            />
-          </View>
+    <View style={styles.container}>
+      <Text style={styles.title}>Quick Status Board</Text>
+      <Text style={styles.subtitle}>
+        {isSignUp ? "Create Account" : "Sign In"}
+      </Text>
 
-          <View style={styles.inputContainer}>
-            <TextInput
-              style={styles.input}
-              placeholder="Password"
-              value={password}
-              onChangeText={setPassword}
-              secureTextEntry
-              autoCapitalize="none"
-            />
-          </View>
+      <TextInput
+        style={styles.input}
+        placeholder="Email"
+        value={email}
+        onChangeText={setEmail}
+        keyboardType="email-address"
+        autoCapitalize="none"
+      />
 
-          <TouchableOpacity
-            style={[styles.button, loading && styles.buttonDisabled]}
-            onPress={handleAuth}
-            disabled={loading}
-          >
-            <Text style={styles.buttonText}>
-              {loading ? 'Loading...' : (isLogin ? 'Login' : 'Sign Up')}
-            </Text>
-          </TouchableOpacity>
+      <TextInput
+        style={styles.input}
+        placeholder="Password"
+        value={password}
+        onChangeText={setPassword}
+        secureTextEntry
+      />
 
-          <TouchableOpacity
-            style={styles.switchButton}
-            onPress={() => setIsLogin(!isLogin)}
-          >
-            <Text style={styles.switchText}>
-              {isLogin 
-                ? "Don't have an account? Sign Up" 
-                : "Already have an account? Login"
-              }
-            </Text>
-          </TouchableOpacity>
-        </View>
-      </ScrollView>
-    </KeyboardAvoidingView>
+      <TouchableOpacity
+        style={[styles.button, loading && styles.buttonDisabled]}
+        onPress={handleAuth}
+        disabled={loading}
+      >
+        <Text style={styles.buttonText}>
+          {loading ? "Loading..." : isSignUp ? "Sign Up" : "Sign In"}
+        </Text>
+      </TouchableOpacity>
+
+      <TouchableOpacity
+        style={styles.switchButton}
+        onPress={() => setIsSignUp(!isSignUp)}
+      >
+        <Text style={styles.switchText}>
+          {isSignUp
+            ? "Already have an account? Sign In"
+            : "Don't have an account? Sign Up"}
+        </Text>
+      </TouchableOpacity>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
-  },
-  scrollContainer: {
-    flexGrow: 1,
-    justifyContent: 'center',
+    justifyContent: "center",
     padding: 20,
-  },
-  formContainer: {
-    backgroundColor: 'white',
-    borderRadius: 10,
-    padding: 30,
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.1,
-    shadowRadius: 3.84,
-    elevation: 5,
+    backgroundColor: "#fff",
   },
   title: {
     fontSize: 28,
-    fontWeight: 'bold',
-    textAlign: 'center',
-    marginBottom: 30,
-    color: '#333',
+    fontWeight: "bold",
+    textAlign: "center",
+    marginBottom: 10,
+    color: "#333",
   },
-  inputContainer: {
-    marginBottom: 20,
+  subtitle: {
+    fontSize: 18,
+    textAlign: "center",
+    marginBottom: 30,
+    color: "#666",
   },
   input: {
     borderWidth: 1,
-    borderColor: '#ddd',
+    borderColor: "#ddd",
     borderRadius: 8,
     padding: 15,
     fontSize: 16,
-    backgroundColor: '#f9f9f9',
+    marginBottom: 15,
   },
   button: {
-    backgroundColor: '#007AFF',
+    backgroundColor: "#007AFF",
+    paddingVertical: 15,
     borderRadius: 8,
-    padding: 15,
-    alignItems: 'center',
-    marginBottom: 20,
+    marginBottom: 15,
   },
   buttonDisabled: {
-    backgroundColor: '#ccc',
+    backgroundColor: "#ccc",
   },
   buttonText: {
-    color: 'white',
+    color: "#fff",
     fontSize: 16,
-    fontWeight: 'bold',
+    fontWeight: "bold",
+    textAlign: "center",
   },
   switchButton: {
-    alignItems: 'center',
+    padding: 10,
   },
   switchText: {
-    color: '#007AFF',
+    color: "#007AFF",
     fontSize: 14,
+    textAlign: "center",
   },
 });

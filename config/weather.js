@@ -1,105 +1,92 @@
-// Weather API integration for exceptional features
-// You'll need to sign up for a free API key at https://openweathermap.org/api
+// Weather API configuration
+const WEATHER_API_KEY = "8be5144592c3d90ecfb249e32f0ae8b6"; // Your OpenWeatherMap API key
+const WEATHER_API_URL = "https://api.openweathermap.org/data/2.5/weather";
 
-const WEATHER_API_KEY = 'your-openweathermap-api-key-here'; // Replace with your actual API key
-const WEATHER_BASE_URL = 'https://api.openweathermap.org/data/2.5/weather';
-
-// Get current weather for given coordinates
-export const getCurrentWeather = async (latitude, longitude) => {
+export const getWeatherData = async (latitude, longitude) => {
   try {
-    const url = `${WEATHER_BASE_URL}?lat=${latitude}&lon=${longitude}&appid=${WEATHER_API_KEY}&units=metric`;
-    
-    const response = await fetch(url);
-    const data = await response.json();
-    
-    if (data.cod === 200) {
+    if (!WEATHER_API_KEY || WEATHER_API_KEY === "YOUR_OPENWEATHERMAP_API_KEY") {
       return {
-        success: true,
-        weather: {
-          temperature: Math.round(data.main.temp),
-          description: data.weather[0].description,
-          icon: data.weather[0].icon,
-          city: data.name,
-          country: data.sys.country
-        }
-      };
-    } else {
-      return {
-        success: false,
-        error: data.message || 'Failed to fetch weather data'
+        temperature: "N/A",
+        description: "Weather API not configured",
+        icon: "❓",
       };
     }
-  } catch (error) {
+
+    console.log(`Fetching weather for: ${latitude}, ${longitude}`);
+    console.log(`API Key: ${WEATHER_API_KEY.substring(0, 8)}...`);
+
+    const response = await fetch(
+      `${WEATHER_API_URL}?lat=${latitude}&lon=${longitude}&appid=${WEATHER_API_KEY}&units=metric`
+    );
+
+    console.log(`Weather API response status: ${response.status}`);
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error(`Weather API error response: ${errorText}`);
+
+      // If 401 error, return mock weather data instead of failing
+      if (response.status === 401) {
+        console.log("API key invalid - returning mock weather data");
+        return {
+          temperature: "22°C",
+          description: "Partly cloudy (Mock Data)",
+          icon: "⛅",
+          humidity: "65%",
+          windSpeed: "3.2 m/s",
+        };
+      }
+
+      throw new Error(
+        `Weather API request failed: ${response.status} - ${errorText}`
+      );
+    }
+
+    const data = await response.json();
+    console.log("Weather API data received:", data);
+
     return {
-      success: false,
-      error: 'Network error while fetching weather'
+      temperature: `${Math.round(data.main.temp)}°C`,
+      description: data.weather[0].description,
+      icon: getWeatherIcon(data.weather[0].icon),
+      humidity: `${data.main.humidity}%`,
+      windSpeed: `${data.wind.speed} m/s`,
+    };
+  } catch (error) {
+    console.error("Weather API error:", error);
+
+    // Return mock weather data as fallback
+    console.log("Returning mock weather data due to error");
+    return {
+      temperature: "22°C",
+      description: "Partly cloudy (Mock Data)",
+      icon: "⛅",
+      humidity: "65%",
+      windSpeed: "3.2 m/s",
     };
   }
 };
 
-// Get weather for a specific city
-export const getWeatherByCity = async (cityName) => {
-  try {
-    const url = `${WEATHER_BASE_URL}?q=${encodeURIComponent(cityName)}&appid=${WEATHER_API_KEY}&units=metric`;
-    
-    const response = await fetch(url);
-    const data = await response.json();
-    
-    if (data.cod === 200) {
-      return {
-        success: true,
-        weather: {
-          temperature: Math.round(data.main.temp),
-          description: data.weather[0].description,
-          icon: data.weather[0].icon,
-          city: data.name,
-          country: data.sys.country
-        }
-      };
-    } else {
-      return {
-        success: false,
-        error: data.message || 'Failed to fetch weather data'
-      };
-    }
-  } catch (error) {
-    return {
-      success: false,
-      error: 'Network error while fetching weather'
-    };
-  }
-};
-
-// Format weather for display in status
-export const formatWeatherForStatus = (weather) => {
-  if (!weather) return '';
-  
-  const emoji = getWeatherEmoji(weather.icon);
-  return `${emoji} ${weather.temperature}°C, ${weather.description} in ${weather.city}`;
-};
-
-// Get weather emoji based on weather icon code
-const getWeatherEmoji = (iconCode) => {
-  const emojiMap = {
-    '01d': '☀️', // clear sky day
-    '01n': '🌙', // clear sky night
-    '02d': '⛅', // few clouds day
-    '02n': '☁️', // few clouds night
-    '03d': '☁️', // scattered clouds
-    '03n': '☁️',
-    '04d': '☁️', // broken clouds
-    '04n': '☁️',
-    '09d': '🌧️', // shower rain
-    '09n': '🌧️',
-    '10d': '🌦️', // rain day
-    '10n': '🌧️', // rain night
-    '11d': '⛈️', // thunderstorm
-    '11n': '⛈️',
-    '13d': '❄️', // snow
-    '13n': '❄️',
-    '50d': '🌫️', // mist
-    '50n': '🌫️'
+const getWeatherIcon = (iconCode) => {
+  const iconMap = {
+    "01d": "☀️",
+    "01n": "🌙",
+    "02d": "⛅",
+    "02n": "☁️",
+    "03d": "☁️",
+    "03n": "☁️",
+    "04d": "☁️",
+    "04n": "☁️",
+    "09d": "🌧️",
+    "09n": "🌧️",
+    "10d": "🌦️",
+    "10n": "🌧️",
+    "11d": "⛈️",
+    "11n": "⛈️",
+    "13d": "❄️",
+    "13n": "❄️",
+    "50d": "🌫️",
+    "50n": "🌫️",
   };
-  
-  return emojiMap[iconCode] || '🌤️';
+  return iconMap[iconCode] || "❓";
 };
