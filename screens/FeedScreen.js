@@ -29,23 +29,6 @@ export default function FeedScreen({ onSignOut }) {
   const [newStatus, setNewStatus] = useState("");
   const [loading, setLoading] = useState(false);
 
-  const fadeAnim = useRef(new Animated.Value(0)).current;
-  const slideAnim = useRef(new Animated.Value(20)).current;
-
-  useEffect(() => {
-    Animated.parallel([
-      Animated.timing(fadeAnim, {
-        toValue: 1,
-        duration: 500,
-        useNativeDriver: true,
-      }),
-      Animated.timing(slideAnim, {
-        toValue: 0,
-        duration: 500,
-        useNativeDriver: true,
-      }),
-    ]).start();
-  }, []);
 
   useEffect(() => {
     // Listen to real-time updates from Firestore
@@ -91,58 +74,12 @@ export default function FeedScreen({ onSignOut }) {
     }
   };
 
-  const renderStatus = ({ item, index }) => {
-    const scaleAnim = new Animated.Value(0.95);
-    const pressAnim = new Animated.Value(1);
-
-    React.useEffect(() => {
-      Animated.spring(scaleAnim, {
-        toValue: 1,
-        friction: 8,
-        tension: 40,
-        useNativeDriver: true,
-      }).start();
-    }, []);
-
-    const handlePressIn = () => {
-      Animated.spring(pressAnim, {
-        toValue: 0.95,
-        friction: 8,
-        tension: 40,
-        useNativeDriver: true,
-      }).start();
-    };
-
-    const handlePressOut = () => {
-      Animated.spring(pressAnim, {
-        toValue: 1,
-        friction: 8,
-        tension: 40,
-        useNativeDriver: true,
-      }).start();
-    };
-
+  const renderStatus = ({ item }) => {
     return (
       <TouchableOpacity
-        activeOpacity={1}
-        onPressIn={handlePressIn}
-        onPressOut={handlePressOut}
+        activeOpacity={0.8}
       >
-        <Animated.View
-          style={[
-            styles.statusItem,
-            {
-              transform: [
-                { scale: scaleAnim },
-                { scale: pressAnim },
-              ],
-              opacity: scaleAnim.interpolate({
-                inputRange: [0.95, 1],
-                outputRange: [0.8, 1],
-              }),
-            },
-          ]}
-        >
+        <View style={styles.statusItem}>
           <LinearGradient
             colors={["rgba(255, 255, 255, 0.1)", "rgba(255, 255, 255, 0.05)"]}
             style={styles.statusItemGradient}
@@ -167,13 +104,7 @@ export default function FeedScreen({ onSignOut }) {
         return (
         <LinearGradient
           colors={InterviUColors.darkGradient}
-          style={[
-            styles.container,
-            {
-              opacity: fadeAnim,
-              transform: [{ translateY: slideAnim }],
-            },
-          ]}
+          style={styles.container}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 1 }}
         >

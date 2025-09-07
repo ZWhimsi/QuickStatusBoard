@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { TouchableOpacity, Text, Animated, StyleSheet } from 'react-native';
+import React from 'react';
+import { TouchableOpacity, Text, View, StyleSheet } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
 import { InterviUColors, InterviUTypography, InterviUSpacing } from '../assets/styles/brandStyles';
 
@@ -12,26 +12,6 @@ const GradientButton = ({
     style,
     ...props
 }) => {
-    const [pressAnim] = useState(new Animated.Value(1));
-
-    const handlePressIn = () => {
-        Animated.spring(pressAnim, {
-            toValue: 0.95,
-            friction: 8,
-            tension: 40,
-            useNativeDriver: true,
-        }).start();
-    };
-
-    const handlePressOut = () => {
-        Animated.spring(pressAnim, {
-            toValue: 1,
-            friction: 8,
-            tension: 40,
-            useNativeDriver: true,
-        }).start();
-    };
-
     const getGradientColors = () => {
         if (disabled) {
             return ['rgba(150, 150, 150, 0.5)', 'rgba(100, 100, 100, 0.5)'];
@@ -65,13 +45,11 @@ const GradientButton = ({
 
     return (
         <TouchableOpacity
-            activeOpacity={1}
+            activeOpacity={0.8}
             onPress={disabled ? null : onPress}
-            onPressIn={disabled ? null : handlePressIn}
-            onPressOut={disabled ? null : handlePressOut}
             {...props}
         >
-            <Animated.View style={[buttonStyles, { transform: [{ scale: pressAnim }] }]}>
+            <View style={buttonStyles}>
                 <LinearGradient
                     colors={getGradientColors()}
                     start={{ x: 0, y: 0 }}
@@ -80,7 +58,7 @@ const GradientButton = ({
                 >
                     <Text style={textStyles}>{title}</Text>
                 </LinearGradient>
-            </Animated.View>
+            </View>
         </TouchableOpacity>
     );
 };
