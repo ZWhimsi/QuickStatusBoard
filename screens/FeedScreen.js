@@ -1,13 +1,18 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
   View,
   Text,
-  TextInput,
   TouchableOpacity,
   FlatList,
   StyleSheet,
   Alert,
+  Animated,
+  Platform,
 } from "react-native";
+import LinearGradient from "react-native-linear-gradient";
+import FloatingLabelInput from "../components/FloatingLabelInput";
+import GradientButton from "../components/GradientButton";
+import { InterviUColors, InterviUTypography, InterviUSpacing } from "../assets/styles/brandStyles";
 import {
   collection,
   addDoc,
@@ -23,6 +28,24 @@ export default function FeedScreen({ onSignOut }) {
   const [statuses, setStatuses] = useState([]);
   const [newStatus, setNewStatus] = useState("");
   const [loading, setLoading] = useState(false);
+
+  const fadeAnim = useRef(new Animated.Value(0)).current;
+  const slideAnim = useRef(new Animated.Value(20)).current;
+
+  useEffect(() => {
+    Animated.parallel([
+      Animated.timing(fadeAnim, {
+        toValue: 1,
+        duration: 500,
+        useNativeDriver: true,
+      }),
+      Animated.timing(slideAnim, {
+        toValue: 0,
+        duration: 500,
+        useNativeDriver: true,
+      }),
+    ]).start();
+  }, []);
 
   useEffect(() => {
     // Listen to real-time updates from Firestore
@@ -68,137 +91,227 @@ export default function FeedScreen({ onSignOut }) {
     }
   };
 
-  const renderStatus = ({ item }) => (
-    <View style={styles.statusItem}>
-      <Text style={styles.statusText}>{item.text}</Text>
-      <Text style={styles.statusUser}>by {item.user}</Text>
-      <Text style={styles.statusTime}>
-        {item.timestamp?.toDate?.()?.toLocaleString() || "Just now"}
-      </Text>
-    </View>
-  );
+  const renderStatus = ({ item, index }) => {
+    const scaleAnim = new Animated.Value(0.95);
+    const pressAnim = new Animated.Value(1);
 
-  return (
-    <View style={styles.container}>
-      <View style={styles.header}>
-        <Text style={styles.title}>Status Feed</Text>
-        <TouchableOpacity style={styles.signOutButton} onPress={handleSignOut}>
-          <Text style={styles.signOutText}>Sign Out</Text>
-        </TouchableOpacity>
-      </View>
+    React.useEffect(() => {
+      Animated.spring(scaleAnim, {
+        toValue: 1,
+        friction: 8,
+        tension: 40,
+        useNativeDriver: true,
+      }).start();
+    }, []);
 
-      <View style={styles.inputSection}>
-        <TextInput
-          style={styles.textInput}
-          placeholder="What's on your mind?"
-          value={newStatus}
-          onChangeText={setNewStatus}
-          multiline
-        />
-        <TouchableOpacity
-          style={[styles.postButton, loading && styles.buttonDisabled]}
-          onPress={handlePostStatus}
-          disabled={loading}
+    const handlePressIn = () => {
+      Animated.spring(pressAnim, {
+        toValue: 0.95,
+        friction: 8,
+        tension: 40,
+        useNativeDriver: true,
+      }).start();
+    };
+
+    const handlePressOut = () => {
+      Animated.spring(pressAnim, {
+        toValue: 1,
+        friction: 8,
+        tension: 40,
+        useNativeDriver: true,
+      }).start();
+    };
+
+    return (
+      <TouchableOpacity
+        activeOpacity={1}
+        onPressIn={handlePressIn}
+        onPressOut={handlePressOut}
+      >
+        <Animated.View
+          style={[
+            styles.statusItem,
+            {
+              transform: [
+                { scale: scaleAnim },
+                { scale: pressAnim },
+              ],
+              opacity: scaleAnim.interpolate({
+                inputRange: [0.95, 1],
+                outputRange: [0.8, 1],
+              }),
+            },
+          ]}
         >
-          <Text style={styles.postButtonText}>
-            {loading ? "Posting..." : "Post Status"}
-          </Text>
-        </TouchableOpacity>
-      </View>
+          <LinearGradient
+            colors={["rgba(255, 255, 255, 0.1)", "rgba(255, 255, 255, 0.05)"]}
+            style={styles.statusItemGradient}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+          >
+            <Text style={styles.statusText}>{item.text}</Text>
+            <View style={styles.statusMeta}>
+              <View style={styles.statusUserContainer}>
+                <View style={styles.userAvatar} />
+                <Text style={styles.statusUser}>{item.user}</Text>
+              </View>
+              <Text style={styles.statusTime}>
+                {item.timestamp?.toDate?.()?.toLocaleString() || "Just now"}
+              </Text>
+            </View>
+          </LinearGradient>
+        </Animated.View>
+        );
+  };
 
-      <FlatList
-        data={statuses}
-        renderItem={renderStatus}
-        keyExtractor={(item) => item.id}
-        style={styles.statusList}
-        showsVerticalScrollIndicator={false}
-      />
-    </View>
-  );
+        return (
+        <LinearGradient
+          colors={InterviUColors.darkGradient}
+          style={[
+            styles.container,
+            {
+              opacity: fadeAnim,
+              transform: [{ translateY: slideAnim }],
+            },
+          ]}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+        >
+          <Animated.View style={styles.header}>
+            <Text style={styles.title}>Status Feed</Text>
+            <GradientButton
+              title="Sign Out"
+              onPress={handleSignOut}
+              variant="danger"
+              size="small"
+              style={styles.signOutButton}
+            />
+          </Animated.View>
+
+          <View style={styles.inputSection}>
+            <FloatingLabelInput
+              label="What's on your mind?"
+              value={newStatus}
+              onChangeText={setNewStatus}
+              multiline
+              style={styles.inputContainer}
+            />
+            <GradientButton
+              title={loading ? "Posting..." : "Post Status"}
+              onPress={handlePostStatus}
+              disabled={loading}
+              variant="success"
+              style={styles.postButton}
+            />
+          </View>
+
+          <FlatList
+            data={statuses}
+            renderItem={renderStatus}
+            keyExtractor={(item) => item.id}
+            style={styles.statusList}
+            showsVerticalScrollIndicator={false}
+            contentContainerStyle={styles.statusListContent}
+          />
+        </LinearGradient>
+        );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: "#fff",
+        const styles = StyleSheet.create({
+          container: {
+          flex: 1,
   },
-  header: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    padding: 20,
-    borderBottomWidth: 1,
-    borderBottomColor: "#eee",
+        header: {
+          flexDirection: "row",
+        justifyContent: "space-between",
+        alignItems: "center",
+        padding: InterviUSpacing.layout.screenPadding,
+        backgroundColor: "rgba(255, 255, 255, 0.05)",
+        borderBottomWidth: 1,
+        borderBottomColor: "rgba(255, 255, 255, 0.1)",
+        ...Platform.select({
+          ios: {
+          shadowColor: InterviUColors.black,
+        shadowOffset: {width: 0, height: 4 },
+        shadowOpacity: 0.1,
+        shadowRadius: 8,
+      },
+        android: {
+          elevation: 4,
+      },
+    }),
   },
-  title: {
-    fontSize: 24,
-    fontWeight: "bold",
-    color: "#333",
+        title: {
+          ...InterviUTypography.styles.h2,
+          color: InterviUColors.text.light,
+        textShadowColor: "rgba(0, 0, 0, 0.3)",
+        textShadowOffset: {width: 0, height: 2 },
+        textShadowRadius: 4,
   },
-  signOutButton: {
-    backgroundColor: "#FF3B30",
-    paddingHorizontal: 15,
-    paddingVertical: 8,
-    borderRadius: 6,
+        signOutButton: {
+          minWidth: 100,
   },
-  signOutText: {
-    color: "#fff",
-    fontSize: 14,
-    fontWeight: "bold",
+        inputSection: {
+          padding: InterviUSpacing.layout.screenPadding,
+        backgroundColor: "rgba(255, 255, 255, 0.05)",
+        borderBottomWidth: 1,
+        borderBottomColor: "rgba(255, 255, 255, 0.1)",
   },
-  inputSection: {
-    padding: 20,
-    borderBottomWidth: 1,
-    borderBottomColor: "#eee",
+        inputContainer: {
+          marginBottom: InterviUSpacing.spacing[4],
   },
-  textInput: {
-    borderWidth: 1,
-    borderColor: "#ddd",
-    borderRadius: 8,
-    padding: 15,
-    fontSize: 16,
-    marginBottom: 15,
-    minHeight: 80,
-    textAlignVertical: "top",
+        postButton: {
+          alignSelf: "flex-end",
+        minWidth: 140,
   },
-  postButton: {
-    backgroundColor: "#34C759",
-    paddingVertical: 15,
-    borderRadius: 8,
-    alignSelf: "flex-end",
-    paddingHorizontal: 20,
+        statusList: {
+          flex: 1,
   },
-  buttonDisabled: {
-    backgroundColor: "#ccc",
+        statusListContent: {
+          padding: InterviUSpacing.layout.screenPadding,
   },
-  postButtonText: {
-    color: "#fff",
-    fontSize: 16,
-    fontWeight: "bold",
+        statusItem: {
+          marginBottom: InterviUSpacing.spacing[4],
+        borderRadius: InterviUSpacing.borderRadius.lg,
+        overflow: "hidden",
+        ...InterviUSpacing.shadow.lg,
   },
-  statusList: {
-    flex: 1,
-    padding: 20,
+        statusItemGradient: {
+          padding: InterviUSpacing.layout.cardPadding,
+        borderWidth: 1,
+        borderColor: "rgba(255, 255, 255, 0.1)",
+        borderRadius: InterviUSpacing.borderRadius.lg,
   },
-  statusItem: {
-    backgroundColor: "#f8f9fa",
-    padding: 15,
-    borderRadius: 8,
-    marginBottom: 15,
+        statusText: {
+          ...InterviUTypography.styles.body,
+          color: InterviUColors.text.light,
+        marginBottom: InterviUSpacing.spacing[4],
+        lineHeight: InterviUTypography.lineHeight.relaxed * InterviUTypography.fontSize.base,
   },
-  statusText: {
-    fontSize: 16,
-    color: "#333",
-    marginBottom: 8,
+        statusMeta: {
+          flexDirection: "row",
+        justifyContent: "space-between",
+        alignItems: "center",
+        marginTop: InterviUSpacing.spacing[2],
   },
-  statusUser: {
-    fontSize: 14,
-    color: "#666",
-    fontWeight: "bold",
+        statusUserContainer: {
+          flexDirection: "row",
+        alignItems: "center",
   },
-  statusTime: {
-    fontSize: 12,
-    color: "#999",
-    marginTop: 4,
+        userAvatar: {
+          width: InterviUSpacing.avatarSize.sm,
+        height: InterviUSpacing.avatarSize.sm,
+        borderRadius: InterviUSpacing.avatarSize.sm / 2,
+        backgroundColor: InterviUColors.purpleBlue,
+        marginRight: InterviUSpacing.spacing[2],
+  },
+        statusUser: {
+          ...InterviUTypography.styles.bodySmall,
+          color: InterviUColors.lightBlue,
+        fontWeight: InterviUTypography.fontWeight.semibold,
+  },
+        statusTime: {
+          ...InterviUTypography.styles.caption,
+          color: "rgba(255, 255, 255, 0.6)",
   },
 });
