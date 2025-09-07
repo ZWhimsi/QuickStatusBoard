@@ -27,6 +27,7 @@
         <category android:name="android.intent.category.DEFAULT"/>
         <category android:name="android.intent.category.BROWSABLE"/>
         <data android:scheme="exp+quickstatusboard"/>
+        <data android:scheme="exp+interviu-status-board"/>
       </intent-filter>
     </activity>
   </application>

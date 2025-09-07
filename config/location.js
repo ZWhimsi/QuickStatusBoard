@@ -31,3 +31,4 @@ export const getCurrentLocation = async () => {
     throw error;
   }
 };
+ 

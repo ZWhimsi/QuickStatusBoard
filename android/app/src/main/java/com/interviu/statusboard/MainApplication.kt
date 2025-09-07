@@ -1,4 +1,4 @@
-package com.anonymous.QuickStatusBoard
+package com.interviu.statusboard
 
 import android.app.Application
 import android.content.res.Configuration
