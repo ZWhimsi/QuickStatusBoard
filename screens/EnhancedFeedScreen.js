@@ -8,6 +8,7 @@ import {
   StyleSheet,
   Alert,
   ScrollView,
+  Image,
 } from "react-native";
 import {
   collection,
@@ -22,6 +23,11 @@ import { auth, db } from "../config/firebase";
 import { getCurrentLocation } from "../config/location";
 import { getWeatherData } from "../config/weather";
 import { scheduleLocalNotification } from "../config/notifications";
+import InterviUBrandStyles, {
+  InterviUColors,
+  InterviUTypography,
+  InterviUSpacing,
+} from "../assets/styles/brandStyles";
 
 export default function EnhancedFeedScreen({ onSignOut }) {
   const [statuses, setStatuses] = useState([]);
@@ -142,7 +148,14 @@ export default function EnhancedFeedScreen({ onSignOut }) {
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.title}>Quick Status Board</Text>
+        <View style={styles.headerLeft}>
+          <Image
+            source={require("../assets/logos/HD (1).png")}
+            style={styles.headerLogo}
+            resizeMode="contain"
+          />
+          <Text style={styles.title}>InterviU</Text>
+        </View>
         <TouchableOpacity style={styles.signOutButton} onPress={handleSignOut}>
           <Text style={styles.signOutText}>Sign Out</Text>
         </TouchableOpacity>
@@ -214,135 +227,122 @@ export default function EnhancedFeedScreen({ onSignOut }) {
 
 const styles = StyleSheet.create({
   container: {
-    flex: 1,
-    backgroundColor: "#fff",
+    ...InterviUBrandStyles.container,
   },
   header: {
+    ...InterviUBrandStyles.header,
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    padding: 20,
-    borderBottomWidth: 1,
-    borderBottomColor: "#eee",
+  },
+  headerLeft: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  headerLogo: {
+    width: 32,
+    height: 32,
+    marginRight: InterviUSpacing.spacing[2],
   },
   title: {
-    fontSize: 24,
-    fontWeight: "bold",
-    color: "#333",
+    ...InterviUTypography.styles.h3,
+    color: InterviUColors.purpleBlue,
   },
   signOutButton: {
-    backgroundColor: "#FF3B30",
-    paddingHorizontal: 15,
-    paddingVertical: 8,
-    borderRadius: 6,
+    backgroundColor: InterviUColors.error,
+    paddingHorizontal: InterviUSpacing.spacing[4],
+    paddingVertical: InterviUSpacing.spacing[2],
+    borderRadius: InterviUSpacing.borderRadius.base,
   },
   signOutText: {
-    color: "#fff",
-    fontSize: 14,
-    fontWeight: "bold",
+    ...InterviUTypography.styles.caption,
+    color: InterviUColors.white,
+    fontWeight: InterviUTypography.fontWeight.semibold,
   },
   infoSection: {
-    padding: 20,
-    borderBottomWidth: 1,
-    borderBottomColor: "#eee",
-    backgroundColor: "#f8f9fa",
+    ...InterviUBrandStyles.card,
+    margin: InterviUSpacing.layout.screenPadding,
+    backgroundColor: InterviUColors.background.secondary,
   },
   locationButton: {
-    backgroundColor: "#007AFF",
-    paddingVertical: 12,
-    paddingHorizontal: 20,
-    borderRadius: 8,
-    marginBottom: 10,
+    ...InterviUBrandStyles.primaryButton,
+    marginBottom: InterviUSpacing.spacing[3],
   },
   locationButtonText: {
-    color: "#fff",
-    fontSize: 16,
-    fontWeight: "bold",
-    textAlign: "center",
+    ...InterviUBrandStyles.primaryButtonText,
   },
   locationInfo: {
-    marginBottom: 10,
+    marginBottom: InterviUSpacing.spacing[3],
   },
   locationText: {
-    fontSize: 14,
-    color: "#666",
-    fontWeight: "bold",
+    ...InterviUTypography.styles.bodySmall,
+    color: InterviUColors.text.secondary,
+    fontWeight: InterviUTypography.fontWeight.semibold,
   },
   weatherInfo: {
-    backgroundColor: "#e3f2fd",
-    padding: 10,
-    borderRadius: 8,
-    marginBottom: 5,
+    backgroundColor: InterviUColors.lightBlue + "20",
+    padding: InterviUSpacing.spacing[3],
+    borderRadius: InterviUSpacing.borderRadius.base,
+    marginBottom: InterviUSpacing.spacing[2],
   },
   weatherText: {
-    fontSize: 16,
-    color: "#1976d2",
-    fontWeight: "bold",
+    ...InterviUTypography.styles.body,
+    color: InterviUColors.mediumBlue,
+    fontWeight: InterviUTypography.fontWeight.semibold,
   },
   weatherDetails: {
-    fontSize: 12,
-    color: "#666",
-    marginTop: 2,
+    ...InterviUTypography.styles.caption,
+    color: InterviUColors.text.muted,
+    marginTop: InterviUSpacing.spacing[1],
   },
   inputSection: {
-    padding: 20,
-    borderBottomWidth: 1,
-    borderBottomColor: "#eee",
+    ...InterviUBrandStyles.card,
+    margin: InterviUSpacing.layout.screenPadding,
   },
   textInput: {
-    borderWidth: 1,
-    borderColor: "#ddd",
-    borderRadius: 8,
-    padding: 15,
-    fontSize: 16,
-    marginBottom: 15,
+    ...InterviUBrandStyles.input,
     minHeight: 80,
     textAlignVertical: "top",
+    marginBottom: InterviUSpacing.spacing[4],
   },
   postButton: {
-    backgroundColor: "#34C759",
-    paddingVertical: 15,
-    borderRadius: 8,
+    ...InterviUBrandStyles.primaryButton,
     alignSelf: "flex-end",
-    paddingHorizontal: 20,
+    paddingHorizontal: InterviUSpacing.spacing[6],
   },
   buttonDisabled: {
-    backgroundColor: "#ccc",
+    backgroundColor: InterviUColors.gray[400],
   },
   postButtonText: {
-    color: "#fff",
-    fontSize: 16,
-    fontWeight: "bold",
+    ...InterviUBrandStyles.primaryButtonText,
   },
   statusList: {
     flex: 1,
-    padding: 20,
+    paddingHorizontal: InterviUSpacing.layout.screenPadding,
   },
   statusItem: {
-    backgroundColor: "#f8f9fa",
-    padding: 15,
-    borderRadius: 8,
-    marginBottom: 15,
+    ...InterviUBrandStyles.card,
+    marginBottom: InterviUSpacing.spacing[4],
   },
   statusText: {
-    fontSize: 16,
-    color: "#333",
-    marginBottom: 8,
+    ...InterviUTypography.styles.body,
+    color: InterviUColors.text.primary,
+    marginBottom: InterviUSpacing.spacing[2],
   },
   statusUser: {
-    fontSize: 14,
-    color: "#666",
-    fontWeight: "bold",
+    ...InterviUTypography.styles.bodySmall,
+    color: InterviUColors.text.secondary,
+    fontWeight: InterviUTypography.fontWeight.semibold,
   },
   statusLocation: {
-    fontSize: 12,
-    color: "#007AFF",
-    marginTop: 4,
+    ...InterviUTypography.styles.caption,
+    color: InterviUColors.purpleBlue,
+    marginTop: InterviUSpacing.spacing[1],
     fontStyle: "italic",
   },
   statusTime: {
-    fontSize: 12,
-    color: "#999",
-    marginTop: 4,
+    ...InterviUTypography.styles.caption,
+    color: InterviUColors.text.muted,
+    marginTop: InterviUSpacing.spacing[1],
   },
 });

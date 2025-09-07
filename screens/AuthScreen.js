@@ -6,12 +6,18 @@ import {
   TouchableOpacity,
   StyleSheet,
   Alert,
+  Image,
 } from "react-native";
 import {
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
 } from "firebase/auth";
 import { auth } from "../config/firebase";
+import InterviUBrandStyles, {
+  InterviUColors,
+  InterviUTypography,
+  InterviUSpacing,
+} from "../assets/styles/brandStyles";
 
 export default function AuthScreen({ onAuthSuccess }) {
   const [email, setEmail] = useState("");
@@ -43,7 +49,15 @@ export default function AuthScreen({ onAuthSuccess }) {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Quick Status Board</Text>
+      <View style={styles.logoContainer}>
+        <Image
+          source={require("../assets/logos/HD (1).png")}
+          style={styles.logo}
+          resizeMode="contain"
+        />
+      </View>
+
+      <Text style={styles.title}>InterviU</Text>
       <Text style={styles.subtitle}>
         {isSignUp ? "Create Account" : "Sign In"}
       </Text>
@@ -51,6 +65,7 @@ export default function AuthScreen({ onAuthSuccess }) {
       <TextInput
         style={styles.input}
         placeholder="Email"
+        placeholderTextColor={InterviUColors.text.muted}
         value={email}
         onChangeText={setEmail}
         keyboardType="email-address"
@@ -60,6 +75,7 @@ export default function AuthScreen({ onAuthSuccess }) {
       <TextInput
         style={styles.input}
         placeholder="Password"
+        placeholderTextColor={InterviUColors.text.muted}
         value={password}
         onChangeText={setPassword}
         secureTextEntry
@@ -91,53 +107,51 @@ export default function AuthScreen({ onAuthSuccess }) {
 
 const styles = StyleSheet.create({
   container: {
-    flex: 1,
+    ...InterviUBrandStyles.container,
     justifyContent: "center",
-    padding: 20,
-    backgroundColor: "#fff",
+    paddingHorizontal: InterviUSpacing.layout.screenPadding,
+    paddingVertical: InterviUSpacing.spacing[8],
+  },
+  logoContainer: {
+    alignItems: "center",
+    marginBottom: InterviUSpacing.spacing[6],
+  },
+  logo: {
+    width: 120,
+    height: 120,
   },
   title: {
-    fontSize: 28,
-    fontWeight: "bold",
+    ...InterviUTypography.styles.h1,
+    color: InterviUColors.purpleBlue,
     textAlign: "center",
-    marginBottom: 10,
-    color: "#333",
+    marginBottom: InterviUSpacing.spacing[2],
   },
   subtitle: {
-    fontSize: 18,
+    ...InterviUTypography.styles.h4,
+    color: InterviUColors.text.secondary,
     textAlign: "center",
-    marginBottom: 30,
-    color: "#666",
+    marginBottom: InterviUSpacing.spacing[8],
   },
   input: {
-    borderWidth: 1,
-    borderColor: "#ddd",
-    borderRadius: 8,
-    padding: 15,
-    fontSize: 16,
-    marginBottom: 15,
+    ...InterviUBrandStyles.input,
+    marginBottom: InterviUSpacing.spacing[4],
   },
   button: {
-    backgroundColor: "#007AFF",
-    paddingVertical: 15,
-    borderRadius: 8,
-    marginBottom: 15,
+    ...InterviUBrandStyles.primaryButton,
+    marginBottom: InterviUSpacing.spacing[4],
   },
   buttonDisabled: {
-    backgroundColor: "#ccc",
+    backgroundColor: InterviUColors.gray[400],
   },
   buttonText: {
-    color: "#fff",
-    fontSize: 16,
-    fontWeight: "bold",
-    textAlign: "center",
+    ...InterviUBrandStyles.primaryButtonText,
   },
   switchButton: {
-    padding: 10,
+    padding: InterviUSpacing.spacing[3],
   },
   switchText: {
-    color: "#007AFF",
-    fontSize: 14,
+    ...InterviUTypography.styles.link,
+    color: InterviUColors.purpleBlue,
     textAlign: "center",
   },
 });

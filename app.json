@@ -1,7 +1,7 @@
 {
   "expo": {
-    "name": "QuickStatusBoard",
-    "slug": "QuickStatusBoard",
+    "name": "InterviU",
+    "slug": "interviu-status-board",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -10,7 +10,7 @@
     "splash": {
       "image": "./assets/splash-icon.png",
       "resizeMode": "contain",
-      "backgroundColor": "#ffffff"
+      "backgroundColor": "#5639FE"
     },
     "ios": {
       "supportsTablet": true
@@ -18,10 +18,10 @@
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
-        "backgroundColor": "#ffffff"
+        "backgroundColor": "#5639FE"
       },
       "edgeToEdgeEnabled": true,
-      "package": "com.anonymous.QuickStatusBoard"
+      "package": "com.interviu.statusboard"
     },
     "web": {
       "favicon": "./assets/favicon.png"
